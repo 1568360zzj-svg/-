@@ -1,0 +1,87 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #0a0a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+}
+
+#ui {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 480px;
+    padding: 10px;
+}
+
+#hud {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    padding: 12px 0;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#hud span span {
+    color: #ffd700;
+}
+
+#game-canvas {
+    border-radius: 12px;
+    background: #111128;
+    touch-action: none;
+    cursor: pointer;
+}
+
+#overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+#overlay.hidden { display: none; }
+
+#overlay-content {
+    text-align: center;
+    color: #fff;
+}
+
+#overlay-content h2 {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+#overlay-content p {
+    font-size: 18px;
+    color: #aaa;
+    margin-bottom: 20px;
+}
+
+#overlay-btn {
+    padding: 12px 40px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#overlay-btn:active { transform: scale(0.95); }
