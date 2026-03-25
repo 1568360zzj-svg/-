@@ -117,6 +117,7 @@ function showAchievements(){
   html+='</div>';
   showOverlay('🏆 成就',`${earned.length}/${ACHIEVEMENTS.length} 已解锁<br>${html}`,[
     {text:'关闭',cls:'btn-secondary',fn:hideOverlay}]);
+}
 
 // ===== 区域主题 =====
 // 每10关一个区域
@@ -217,6 +218,7 @@ let particles=[],comboTexts=[],floatingTexts=[];
 let hintTimer=null,hintCells=null;
 let bgStars=[],screenFlash=0,flashColor='#fff';
 let currentArea=null;
+let canvasEventsBound=false;
 
 // ===== 关卡配置 =====
 function parseCoords(arr){return(arr||[]).map(s=>typeof s==='string'?{r:+s[0],c:+s[1]}:Array.isArray(s)?{r:s[0],c:s[1]}:s)}
@@ -341,16 +343,17 @@ function showTutorial(onDone){
 // ===== 初始化 =====
 function init(){canvas=document.getElementById('game-canvas');ctx=canvas.getContext('2d');
 const maxW=Math.min(window.innerWidth-20,480);cellSize=Math.floor(maxW/COLS);padding=3;
-canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;initBgStars();level=1;startLevel(level)}
+canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;bindCanvasEvents();initBgStars();level=1;startLevel(level)}
 
 function initEndless(){canvas=document.getElementById('game-canvas');ctx=canvas.getContext('2d');
 const maxW=Math.min(window.innerWidth-20,480);cellSize=Math.floor(maxW/COLS);padding=3;
-canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;initBgStars();level=1;startEndlessLevel()}
+canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;bindCanvasEvents();initBgStars();level=1;startEndlessLevel()}
 
 function startEndlessLevel(){
   initBoard({ice:[],chains:[],stones:[],holes:[],portals:[]});
   score=0;combo=0;selected=null;particles=[];comboTexts=[];floatingTexts=[];hintCells=null;screenFlash=0;
   endlessMovesLeft=30;
+  moves=30;
   currentObj={type:'endless',target:Infinity,gemType:0,icon:'♾️',descFn:t=>'无尽模式',checkFn:()=>false};
   objProgress=0;currentArea=getArea(level);applyTheme(currentArea);
   document.getElementById('obj-icon').textContent='♾️';
@@ -399,11 +402,13 @@ function wouldMatch(r,c,t){
 function isPlayable(r,c){const o=obstacles[r]&&obstacles[r][c];return o&&o.type!==OBS_HOLE&&o.type!==OBS_STONE}
 function isMovable(r,c){return isPlayable(r,c)&&board[r][c]&&!board[r][c].chained}
 function getPortalAt(r,c){for(const p of portals){if(p.from.r===r&&p.from.c===c)return{dir:'out',portal:p};if(p.to.r===r&&p.to.c===c)return{dir:'in',portal:p}}return null}
+function getMovesLeft(){return gameMode===1?endlessMovesLeft:moves}
+function spendMove(){if(gameMode===1)endlessMovesLeft--;else moves--}
 
 // ===== HUD =====
 function updateHUD(){
   document.getElementById('score').textContent=score;
-  document.getElementById('moves').textContent=gameMode===1?moves:moves;
+  document.getElementById('moves').textContent=getMovesLeft();
   document.getElementById('level').textContent=gameMode===1?'∞':level;
   document.getElementById('target').textContent=currentObj?(gameMode===1?'-':currentObj.target):'-'}
 
@@ -548,8 +553,12 @@ function onMove(e){if(!touchStart||animating)return;e.preventDefault();const cel
   const dr=cell.r-touchStart.r,dc=cell.c-touchStart.c;if(Math.abs(dr)+Math.abs(dc)>=1){let tr=touchStart.r,tc=touchStart.c;if(Math.abs(dr)>Math.abs(dc))tr+=dr>0?1:-1;else tc+=dc>0?1:-1;
     if(tr>=0&&tr<ROWS&&tc>=0&&tc<COLS&&isPlayable(tr,tc)){trySwap(touchStart,{r:tr,c:tc});selected=null;touchStart=null}}}
 function onUp(){touchStart=null}
-canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
-canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp);
+function bindCanvasEvents(){
+  if(canvasEventsBound||!canvas)return;
+  canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+  canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp);
+  canvasEventsBound=true;
+}
 
 // ===== 交换 =====
 function swapCells(r1,c1,r2,c2){const t=board[r1][c1];board[r1][c1]=board[r2][c2];board[r2][c2]=t;if(board[r1][c1]){board[r1][c1].x=c1;board[r1][c1].y=r1}if(board[r2][c2]){board[r2][c2].x=c2;board[r2][c2].y=r2}}
@@ -558,9 +567,10 @@ async function trySwap(a,b){
   if(!isMovable(a.r,a.c)||!isMovable(b.r,b.c)){playSound('badswap');return}
   animating=true;swapCells(a.r,a.c,b.r,b.c);playSound('swap');await animSwap(a,b,140);
   const ms=findMatches();if(ms.length===0){swapCells(a.r,a.c,b.r,b.c);playSound('badswap');await animSwap(a,b,140);animating=false;draw();resetHintTimer();return}
-  moves--;combo=0;updateHUD();await processMatches();
+  spendMove();combo=0;updateHUD();await processMatches();
   // 泥沼蔓延 + 炸弹倒计时
   const bombResult=processBombTick();
+  if(bombResult.exploded&&findMatches().length>0)await processMatches();
   processMudSpread();
   if(bombResult.exploded){screenFlash=.4;flashColor='#ff4400';screenShake()}
   checkState();animating=false;draw();resetHintTimer()}
@@ -640,29 +650,94 @@ function findMatches(){
 
 // ===== 障碍处理 =====
 function processAdjacentObstacles(matchCells){
-  let cleared=0;const checked=new Set();
+  let cleared=0;
+  const checked=new Set();
   for(const m of matchCells){
-    for(const[nr,nc]of[[m.r-1,m.c],[m.r+1,m.c],[m.r,m.c-1],[m.r,m.c+1]]){
-      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;const key=`${nr},${nc}`;if(checked.has(key))continue;checked.add(key);
-      const o=obstacles[nr][nc];if(o.type===OBS_ICE){o.layers--;const cx=nc*cellSize+cellSize/2,cy=nr*cellSize+cellSize/2;spawnParticles(cx,cy,'#a8d8ea',6);playSound('ice');
-        if(o.layers<=0){o.type=OBS_NONE;cleared++;addFloatingText('🧊碎!',cx,cy,'#a8d8ea',14)}}
-      if(o.type===OBS_MUD){o.type=OBS_NONE;cleared++;const cx=nc*cellSize+cellSize/2,cy=nr*cellSize+cellSize/2;spawnParticles(cx,cy,'#5a4530',5);playSound('mud');addFloatingText('泥沼清除!',cx,cy,'#8a7550',13)}}}
-    if(board[m.r][m.c]&&board[m.r][m.c].chained){board[m.r][m.c].chained=false;const cx=m.c*cellSize+cellSize/2,cy=m.r*cellSize+cellSize/2;spawnParticles(cx,cy,'#c8a060',8);playSound('chain');cleared++;addFloatingText('⛓碎!',cx,cy,'#c8a060',14)}}
-  return cleared}
+    for(const [nr,nc] of [[m.r-1,m.c],[m.r+1,m.c],[m.r,m.c-1],[m.r,m.c+1]]){
+      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+      const key=`${nr},${nc}`;
+      if(checked.has(key))continue;
+      checked.add(key);
+      const o=obstacles[nr][nc];
+      const cx=nc*cellSize+cellSize/2;
+      const cy=nr*cellSize+cellSize/2;
+      if(o.type===OBS_ICE){
+        o.layers--;
+        spawnParticles(cx,cy,'#a8d8ea',6);
+        playSound('ice');
+        if(o.layers<=0){
+          o.type=OBS_NONE;
+          cleared++;
+          addFloatingText('冰块破碎!',cx,cy,'#a8d8ea',14);
+        }
+      }
+      if(o.type===OBS_MUD){
+        o.type=OBS_NONE;
+        cleared++;
+        spawnParticles(cx,cy,'#5a4530',5);
+        playSound('mud');
+        addFloatingText('泥沼清除!',cx,cy,'#8a7550',13);
+      }
+    }
+    if(board[m.r][m.c]&&board[m.r][m.c].chained){
+      const cx=m.c*cellSize+cellSize/2;
+      const cy=m.r*cellSize+cellSize/2;
+      board[m.r][m.c].chained=false;
+      spawnParticles(cx,cy,'#c8a060',8);
+      playSound('chain');
+      cleared++;
+      addFloatingText('锁链破碎!',cx,cy,'#c8a060',14);
+    }
+  }
+  return cleared;
+}
 
 function processSpecialObstacles(sp){
-  let cleared=0;const affected=[];
+  let cleared=0;
+  const affected=[];
   if(sp.special===SPECIAL_LINE_H)for(let c=0;c<COLS;c++)affected.push({r:sp.r,c});
   else if(sp.special===SPECIAL_LINE_V)for(let r=0;r<ROWS;r++)affected.push({r,c:sp.c});
   else if(sp.special===SPECIAL_BOMB)for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const r=sp.r+dr,c=sp.c+dc;if(r>=0&&r<ROWS&&c>=0&&c<COLS)affected.push({r,c})}
   else if(sp.special===SPECIAL_RAINBOW)for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)affected.push({r,c});
-  for(const{r,c}of affected){const o=obstacles[r][c];
-    if(o.type===OBS_STONE){o.type=OBS_NONE;cleared++;const cx=c*cellSize+cellSize/2,cy=r*cellSize+cellSize/2;spawnParticles(cx,cy,'#888',10);playSound('stone');addFloatingText('🪨碎!',cx,cy,'#aaa',14)}
-    if(o.type===OBS_ICE){o.layers--;const cx=c*cellSize+cellSize/2,cy=r*cellSize+cellSize/2;spawnParticles(cx,cy,'#a8d8ea',5);playSound('ice');if(o.layers<=0){o.type=OBS_NONE;cleared++}}
-    if(o.type===OBS_MUD){o.type=OBS_NONE;cleared++;const cx=c*cellSize+cellSize/2,cy=r*cellSize+cellSize/2;spawnParticles(cx,cy,'#5a4530',5);playSound('mud')}
-    if(o.type===OBS_BOMB){o.type=OBS_NONE;cleared++;const cx=c*cellSize+cellSize/2,cy=r*cellSize+cellSize/2;spawnParticles(cx,cy,'#ff4400',8);playSound('bomb');addFloatingText('💣拆除!',cx,cy,'#ff8800',13)}
-    if(board[r][c]&&board[r][c].chained){board[r][c].chained=false;cleared++;spawnParticles(c*cellSize+cellSize/2,r*cellSize+cellSize/2,'#c8a060',6);playSound('chain')}}
-  return cleared}
+  for(const {r,c} of affected){
+    const o=obstacles[r][c];
+    const cx=c*cellSize+cellSize/2;
+    const cy=r*cellSize+cellSize/2;
+    if(o.type===OBS_STONE){
+      o.type=OBS_NONE;
+      cleared++;
+      spawnParticles(cx,cy,'#888',10);
+      playSound('stone');
+      addFloatingText('石头粉碎!',cx,cy,'#aaa',14);
+    }
+    if(o.type===OBS_ICE){
+      o.layers--;
+      spawnParticles(cx,cy,'#a8d8ea',5);
+      playSound('ice');
+      if(o.layers<=0){o.type=OBS_NONE;cleared++}
+    }
+    if(o.type===OBS_MUD){
+      o.type=OBS_NONE;
+      cleared++;
+      spawnParticles(cx,cy,'#5a4530',5);
+      playSound('mud');
+    }
+    if(o.type===OBS_BOMB){
+      o.type=OBS_NONE;
+      cleared++;
+      spawnParticles(cx,cy,'#ff4400',8);
+      playSound('bomb');
+      addFloatingText('炸弹拆除!',cx,cy,'#ff8800',13);
+    }
+    if(board[r][c]&&board[r][c].chained){
+      board[r][c].chained=false;
+      cleared++;
+      spawnParticles(cx,cy,'#c8a060',6);
+      playSound('chain');
+    }
+  }
+  return cleared;
+}
 
 // ===== 传送门下落处理 =====
 function applyGravityWithPortals(){
@@ -792,7 +867,7 @@ function drawComboTexts(){if(!comboTexts.length)return;const now=performance.now
 // ===== 游戏状态 =====
 function checkState(){
   if(gameMode===1){// 无尽模式
-    if(moves<=0){
+    if(endlessMovesLeft<=0){
       playSound('lose');
       if(score>saveData.endlessBest)saveData.endlessBest=score;
       saveData.totalScore+=score;saveData.gamesPlayed++;saveGame(saveData);
@@ -835,10 +910,23 @@ function hasValid(){
     if(r<ROWS-1&&isMovable(r+1,c)){swapCells(r,c,r+1,c);const ok=findMatches().length>0;swapCells(r,c,r+1,c);if(ok)return true}}return false}
 
 function shuffleBoard(){
-  const ts=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]&&!board[r][c].chained)ts.push(board[r][c].type);
-  for(let i=ts.length-1;i>0;i--){const j=randInt(0,i);[ts[i],ts[j]]=[ts[j],ts[i]]}
-  let x=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]&&!board[r][c].chained)board[r][c].type=ts[x++];
-  if(findMatches().length>0||!hasValid())for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(board[r][c]&&!board[r][c].chained){let t;do{t=randInt(0,GEM_TYPES.length-1)}while(wouldMatch(r,c,t));board[r][c].type=t}}}
+  const movableCells=[];const originalTypes=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c]&&!board[r][c].chained){movableCells.push({r,c});originalTypes.push(board[r][c].type)}
+  if(!movableCells.length)return;
+  for(let attempt=0;attempt<60;attempt++){
+    const ts=[...originalTypes];
+    for(let i=ts.length-1;i>0;i--){const j=randInt(0,i);[ts[i],ts[j]]=[ts[j],ts[i]]}
+    for(let i=0;i<movableCells.length;i++){const cell=movableCells[i];board[cell.r][cell.c].type=ts[i]}
+    if(findMatches().length===0&&hasValid())return;
+  }
+  for(let attempt=0;attempt<120;attempt++){
+    for(const cell of movableCells){
+      let t,guard=0;
+      do{t=randInt(0,GEM_TYPES.length-1);guard++}while(wouldMatch(cell.r,cell.c,t)&&guard<20);
+      board[cell.r][cell.c].type=t;
+    }
+    if(findMatches().length===0&&hasValid())return;
+  }}
 
 // ===== 弹窗 =====
 function showOverlay(title,msg,buttons){
