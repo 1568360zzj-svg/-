@@ -8,11 +8,18 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#060612;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'PingFang SC','Microsoft YaHei',sans-serif;user-select:none;-webkit-user-select:none;overflow:hidden}
 #ui{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;max-width:480px;padding:10px}
-#hud{display:grid;grid-template-columns:repeat(4,1fr);width:100%;padding:8px 4px;border-radius:12px;color:#fff;font-size:14px;font-weight:bold;text-align:center}
+#hud{display:grid;grid-template-columns:repeat(4,1fr);width:100%;padding:10px 6px;border-radius:12px;color:#fff;font-size:14px;font-weight:bold;text-align:center;border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 24px rgba(0,0,0,.18)}
 #hud .hud-item{display:flex;flex-direction:column;align-items:center;gap:1px}
-#hud .hud-label{font-size:10px;letter-spacing:.5px}
-#hud .hud-value{font-size:16px}
-#obj-bar{width:100%;display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:12px;border-radius:8px}
+#hud .hud-label{font-size:10px;letter-spacing:.5px;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+#hud .hud-value{font-size:17px;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+#top-actions{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#timer-pill{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:bold;min-width:118px;justify-content:center;border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 18px rgba(0,0,0,.18)}
+#timer-pill.is-endless{opacity:.75}
+#timer-pill.is-warning{background:rgba(255,92,92,.18);border-color:rgba(255,120,120,.45);color:#ffe3e3}
+.hud-action-btn{padding:9px 16px;border:none;border-radius:999px;font-size:13px;font-weight:bold;cursor:pointer;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 10px 24px rgba(0,0,0,.18);transition:transform .12s,filter .12s}
+.hud-action-btn:hover{filter:brightness(1.06)}
+.hud-action-btn:active{transform:scale(.96)}
+#obj-bar{width:100%;display:flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 24px rgba(0,0,0,.14)}
 #obj-bar .obj-icon{font-size:16px}
 #score-bar-wrap{width:100%;height:5px;border-radius:3px;overflow:hidden}
 #score-bar{height:100%;width:0%;border-radius:3px;transition:width .3s ease}
@@ -25,20 +32,23 @@ body{background:#060612;display:flex;justify-content:center;align-items:center;m
 @keyframes fadeIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 #overlay-content h2{font-size:30px;margin-bottom:6px}
 #overlay-content p{font-size:15px;margin-bottom:14px;line-height:1.6}
-.overlay-btn{padding:11px 36px;font-size:15px;border:none;border-radius:10px;color:#fff;cursor:pointer;font-weight:bold;margin:4px;transition:transform .12s}
+.overlay-btn{padding:11px 36px;font-size:15px;border:none;border-radius:10px;color:#fff;cursor:pointer;font-weight:bold;margin:4px;transition:transform .12s,filter .12s;box-shadow:0 12px 26px rgba(0,0,0,.18)}
 .overlay-btn:active{transform:scale(.93)}
 #start-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:#060612;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:200;color:#fff}
 #start-screen.hidden{display:none}
 #start-screen h1{font-size:40px;margin-bottom:4px}
 #start-screen .subtitle{font-size:13px;margin-bottom:12px;letter-spacing:2px}
 #start-screen .record{font-size:12px;margin-bottom:30px;padding:6px 16px;border-radius:8px}
-.start-btn{padding:14px 56px;font-size:19px;border:none;border-radius:12px;color:#fff;cursor:pointer;font-weight:bold;transition:transform .12s,box-shadow .15s}
+.start-btn{padding:14px 56px;font-size:19px;border:none;border-radius:12px;color:#fff;cursor:pointer;font-weight:bold;transition:transform .12s,box-shadow .15s,filter .12s;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.start-btn:hover{filter:brightness(1.06)}
 .start-btn:active{transform:scale(.94)}
 .start-particles{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none}
 .particle-bg{position:absolute;opacity:.12;animation:floatUp linear infinite}
 @keyframes floatUp{0%{transform:translateY(100vh) scale(.5);opacity:0}10%{opacity:.12}90%{opacity:.12}100%{transform:translateY(-10vh) scale(1);opacity:0}}
 #sound-toggle{position:fixed;top:10px;right:10px;z-index:300;border-radius:8px;font-size:18px;padding:6px 10px;cursor:pointer}
+#ad-banner{background:rgba(0,0,0,.3);border-radius:8px;overflow:hidden;display:none}
 </style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -51,11 +61,11 @@ body{background:#060612;display:flex;justify-content:center;align-items:center;m
   <p class="record" id="record-text"></p>
   <button class="start-btn" id="start-btn" onclick="startGame()">开始探索</button>
   <br>
-  <button class="start-btn" id="endless-btn" onclick="startEndless()" style="font-size:15px;padding:10px 40px;opacity:.7">♾️ 无尽模式</button>
+  <button class="start-btn" id="endless-btn" onclick="startEndless()" style="font-size:15px;padding:10px 40px">♾️ 无尽模式</button>
   <br>
-  <button class="start-btn" onclick="showAchievements()" style="font-size:13px;padding:8px 30px;opacity:.5">🏆 成就</button>
+  <button class="start-btn" onclick="showAchievements()" style="font-size:13px;padding:8px 30px">🏆 成就</button>
   <br>
-  <button class="start-btn" onclick="showTutorial(()=>{})" style="font-size:12px;padding:6px 24px;opacity:.35">❓ 如何游玩</button>
+  <button class="start-btn" onclick="showTutorial(()=>{})" style="font-size:12px;padding:6px 24px">❓ 如何游玩</button>
 </div>
 
 <div id="ui" style="display:none">
@@ -65,9 +75,16 @@ body{background:#060612;display:flex;justify-content:center;align-items:center;m
     <div class="hud-item"><span class="hud-label">步数</span><span class="hud-value" id="moves">30</span></div>
     <div class="hud-item"><span class="hud-label">关卡</span><span class="hud-value" id="level">1</span></div>
   </div>
+  <div id="top-actions">
+    <div id="timer-pill"><span id="timer-label">⏱</span><span id="timer-value">01:00</span></div>
+    <button id="exit-level-btn" class="hud-action-btn" onclick="confirmExitLevel()">退出关卡</button>
+  </div>
   <div id="obj-bar"><span class="obj-icon" id="obj-icon">🎯</span><span id="obj-text">加载中...</span><span class="obj-progress" id="obj-progress"></span></div>
   <div id="score-bar-wrap"><div id="score-bar"></div></div>
   <canvas id="game-canvas"></canvas>
+  <div id="ad-banner" style="width:100%;max-width:480px;min-height:50px;text-align:center;margin-top:6px">
+    <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="BANNER_SLOT_ID"></ins>
+  </div>
   <div id="overlay" class="hidden">
     <div id="overlay-content">
       <h2 id="overlay-title"></h2>
@@ -78,6 +95,36 @@ body{background:#060612;display:flex;justify-content:center;align-items:center;m
 </div>
 
 <script>
+// ===== 广告系统 =====
+const AD_CONFIG={pubId:'ca-pub-XXXXXXXXXXXXXXXX',bannerSlot:'BANNER_SLOT_ID',interstitialSlot:'INTERSTITIAL_SLOT_ID',interstitialFreq:3,rewardMoves:5};
+const AdManager={
+  bannerLoaded:false,levelsCompleted:0,hasUsedReward:false,
+  init(){try{(window.adsbygoogle=window.adsbygoogle||[]).push({});this.bannerLoaded=true}catch(e){}},
+  showBanner(){const el=document.getElementById('ad-banner');if(el)el.style.display='block'},
+  hideBanner(){const el=document.getElementById('ad-banner');if(el)el.style.display='none'},
+  shouldShowInterstitial(){this.levelsCompleted++;return this.levelsCompleted%AD_CONFIG.interstitialFreq===0},
+  showInterstitial(onDone){
+    const d=document.createElement('div');d.id='ad-interstitial';
+    d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,.92);display:flex;flex-direction:column;justify-content:center;align-items:center';
+    d.innerHTML=`<ins class="adsbygoogle" style="display:inline-block;width:300px;height:250px" data-ad-client="${AD_CONFIG.pubId}" data-ad-slot="${AD_CONFIG.interstitialSlot}"></ins><button style="margin-top:16px;padding:10px 30px;font-size:15px;border:none;border-radius:8px;background:#a855f7;color:#fff;cursor:pointer">继续游戏</button>`;
+    document.body.appendChild(d);
+    try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+    d.querySelector('button').onclick=()=>{clearTimeout(t);d.remove();onDone()};
+    const t=setTimeout(()=>{d.remove();onDone()},5000);
+  },
+  canShowRewarded(){return!this.hasUsedReward},
+  showRewarded(onReward){
+    const d=document.createElement('div');d.id='ad-rewarded';
+    d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,.95);display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff';
+    let cd=5;
+    d.innerHTML=`<p style="font-size:14px;margin-bottom:10px">广告播放中...</p><p id="ad-rewarded-timer" style="font-size:28px;font-weight:bold">${cd}</p><p style="font-size:12px;margin-top:10px;opacity:.5">观看完毕即可获得+${AD_CONFIG.rewardMoves}步</p>`;
+    document.body.appendChild(d);
+    const iv=setInterval(()=>{cd--;const el=document.getElementById('ad-rewarded-timer');if(el)el.textContent=cd;
+      if(cd<=0){clearInterval(iv);d.remove();this.hasUsedReward=true;onReward()}},1000);
+  },
+  reset(){this.hasUsedReward=false;this.levelsCompleted=0}
+};
+
 // ===== 存档系统 =====
 const SAVE_KEY='anyu_save_v2';
 function defaultSave(){return{maxLevel:1,totalScore:0,totalGems:0,totalCombos:0,maxCombo:0,achievements:[],tutorialDone:false,gamesPlayed:0,endlessBest:0}}
@@ -155,14 +202,20 @@ function applyTheme(area){
   document.getElementById('subtitle-text').style.color=area.subtitleColor;
   const rec=document.getElementById('record-text');
   rec.style.background=area.recordBg;rec.style.color=area.recordColor;
-  const sb=document.getElementById('start-btn');
-  sb.style.background=area.btnGrad;sb.style.boxShadow=`0 4px 20px ${area.btnShadow}`;
+  document.querySelectorAll('.start-btn').forEach((btn,idx)=>{
+    btn.style.background=idx===0?area.btnGrad:'rgba(15,23,42,.84)';
+    btn.style.border=idx===0?'none':`1px solid ${area.btnSecBorder}`;
+    btn.style.boxShadow=idx===0?`0 4px 20px ${area.btnShadow}`:'0 8px 18px rgba(0,0,0,.16)';
+    btn.style.color='#fff';
+  });
   const st=document.getElementById('sound-toggle');
-  st.style.background=area.objBarBg;st.style.border=`1px solid ${area.btnSecBorder}`;st.style.color=area.labelColor;
+  st.style.background='rgba(15,23,42,.84)';st.style.border=`1px solid ${area.btnSecBorder}`;st.style.color='#fff';
+  const timer=document.getElementById('timer-pill');
+  if(timer){timer.style.color='#fff'}
   // 按钮
   document.querySelectorAll('.overlay-btn').forEach(b=>{
-    if(b.classList.contains('btn-primary')){b.style.background=area.btnGrad}
-    else{b.style.background=area.btnSecBg;b.style.border=`1px solid ${area.btnSecBorder}`}
+    if(b.classList.contains('btn-primary')){b.style.background=area.btnGrad;b.style.color='#fff'}
+    else{b.style.background='rgba(15,23,42,.84)';b.style.border=`1px solid ${area.btnSecBorder}`;b.style.color='#fff'}
   });
   // 星星
   document.querySelectorAll('.star-char').forEach(e=>e.style.color=area.starColor);
@@ -195,13 +248,13 @@ function playSound(type){
 // ===== 常量 =====
 const COLS=8,ROWS=8;
 const GEM_TYPES=[
-  {emoji:'🔥',name:'火焰',color:'#ff4757'},
-  {emoji:'💎',name:'水晶',color:'#2ed573'},
-  {emoji:'⚡',name:'雷电',color:'#ffa502'},
-  {emoji:'🌿',name:'暗藤',color:'#1e90ff'},
-  {emoji:'💜',name:'魔晶',color:'#a55eea'},
-  {emoji:'⭐',name:'星辉',color:'#ff6348'},
-  {emoji:'🌊',name:'深渊',color:'#00d2d3'}
+  {emoji:'🔥',name:'火焰',color:'#ff5a5f'},
+  {emoji:'💎',name:'水晶',color:'#2ecc71'},
+  {emoji:'⚡',name:'雷电',color:'#f5b700'},
+  {emoji:'🌿',name:'暗藤',color:'#3b82f6'},
+  {emoji:'💜',name:'魔晶',color:'#8b5cf6'},
+  {emoji:'⭐',name:'星辉',color:'#ff8c42'},
+  {emoji:'🌊',name:'深渊',color:'#06b6d4'}
 ];
 const SPECIAL_NONE=0,SPECIAL_LINE_H=1,SPECIAL_LINE_V=2,SPECIAL_BOMB=3,SPECIAL_RAINBOW=4;
 const SPECIAL_COLORS={[SPECIAL_LINE_H]:'#ff00ff',[SPECIAL_LINE_V]:'#00ffff',[SPECIAL_BOMB]:'#ffaa00',[SPECIAL_RAINBOW]:'#ffffff'};
@@ -219,6 +272,9 @@ let hintTimer=null,hintCells=null;
 let bgStars=[],screenFlash=0,flashColor='#fff';
 let currentArea=null;
 let canvasEventsBound=false;
+let levelTimer=null;
+let levelTimeLimit=60;
+let levelTimeLeft=60;
 
 // ===== 关卡配置 =====
 function parseCoords(arr){return(arr||[]).map(s=>typeof s==='string'?{r:+s[0],c:+s[1]}:Array.isArray(s)?{r:s[0],c:s[1]}:s)}
@@ -312,10 +368,12 @@ function updateStartScreen(){
 
 function startGame(){
   gameMode=0;document.getElementById('start-screen').classList.add('hidden');document.getElementById('ui').style.display='flex';
+  AdManager.showBanner();AdManager.reset();
   if(!saveData.tutorialDone){showTutorial(()=>{saveData.tutorialDone=true;saveGame(saveData);init()})}
   else init();
 }
 function startEndless(){gameMode=1;document.getElementById('start-screen').classList.add('hidden');document.getElementById('ui').style.display='flex';
+  AdManager.showBanner();AdManager.reset();
   if(!saveData.tutorialDone){showTutorial(()=>{saveData.tutorialDone=true;saveGame(saveData);initEndless()})}
   else initEndless();
 }
@@ -342,11 +400,11 @@ function showTutorial(onDone){
 
 // ===== 初始化 =====
 function init(){canvas=document.getElementById('game-canvas');ctx=canvas.getContext('2d');
-const maxW=Math.min(window.innerWidth-20,480);cellSize=Math.floor(maxW/COLS);padding=3;
+const maxW=Math.min(window.innerWidth-20,480);const maxH=Math.floor((window.innerHeight-160)/ROWS);cellSize=Math.min(Math.floor(maxW/COLS),maxH);padding=3;
 canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;bindCanvasEvents();initBgStars();level=1;startLevel(level)}
 
 function initEndless(){canvas=document.getElementById('game-canvas');ctx=canvas.getContext('2d');
-const maxW=Math.min(window.innerWidth-20,480);cellSize=Math.floor(maxW/COLS);padding=3;
+const maxW=Math.min(window.innerWidth-20,480);const maxH=Math.floor((window.innerHeight-160)/ROWS);cellSize=Math.min(Math.floor(maxW/COLS),maxH);padding=3;
 canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;bindCanvasEvents();initBgStars();level=1;startEndlessLevel()}
 
 function startEndlessLevel(){
@@ -357,10 +415,10 @@ function startEndlessLevel(){
   currentObj={type:'endless',target:Infinity,gemType:0,icon:'♾️',descFn:t=>'无尽模式',checkFn:()=>false};
   objProgress=0;currentArea=getArea(level);applyTheme(currentArea);
   document.getElementById('obj-icon').textContent='♾️';
-  document.getElementById('obj-text').textContent='无尽模式 — 消除越多越好';
+  document.getElementById('obj-text').textContent='无尽模式 - 消除越多越好';
   document.getElementById('obj-progress').textContent=`分数: ${score}`;
   document.getElementById('score-bar').style.width='0%';
-  resetHintTimer();updateHUD();hideOverlay();draw();
+  clearLevelTimer();resetHintTimer();updateHUD();hideOverlay();draw();
 }
 
 function startLevel(lv){
@@ -368,7 +426,7 @@ function startLevel(lv){
   score=0;combo=0;selected=null;particles=[];comboTexts=[];floatingTexts=[];hintCells=null;screenFlash=0;
   moves=cfg.moves;setupObjective(cfg);
   currentArea=getArea(lv);applyTheme(currentArea);
-  resetHintTimer();updateHUD();updateObjDisplay();hideOverlay();draw();
+  resetHintTimer();updateHUD();updateObjDisplay();startLevelTimer();hideOverlay();draw();
 }
 
 function initBgStars(){bgStars=[];for(let i=0;i<25;i++)bgStars.push({x:Math.random()*480,y:Math.random()*480,r:Math.random()*1.2+.3,a:Math.random(),phase:Math.random()*Math.PI*2})}
@@ -404,13 +462,79 @@ function isMovable(r,c){return isPlayable(r,c)&&board[r][c]&&!board[r][c].chaine
 function getPortalAt(r,c){for(const p of portals){if(p.from.r===r&&p.from.c===c)return{dir:'out',portal:p};if(p.to.r===r&&p.to.c===c)return{dir:'in',portal:p}}return null}
 function getMovesLeft(){return gameMode===1?endlessMovesLeft:moves}
 function spendMove(){if(gameMode===1)endlessMovesLeft--;else moves--}
+function formatTime(sec){const safe=Math.max(0,sec|0);const m=Math.floor(safe/60);const s=safe%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function clearLevelTimer(){if(levelTimer){clearInterval(levelTimer);levelTimer=null}}
+function updateTimerUI(){
+  const timer=document.getElementById('timer-pill');
+  const value=document.getElementById('timer-value');
+  if(!timer||!value)return;
+  timer.classList.remove('is-warning','is-endless');
+  if(gameMode===1){
+    value.textContent='∞';
+    timer.classList.add('is-endless');
+    return;
+  }
+  value.textContent=formatTime(levelTimeLeft);
+  if(levelTimeLeft<=15)timer.classList.add('is-warning');
+}
+function startLevelTimer(){
+  clearLevelTimer();
+  if(gameMode===1){updateTimerUI();return}
+  levelTimeLeft=levelTimeLimit;
+  updateTimerUI();
+  levelTimer=setInterval(()=>{
+    if(animating)return;
+    levelTimeLeft--;
+    updateTimerUI();
+    if(levelTimeLeft<=0){
+      clearLevelTimer();
+      levelTimeLeft=0;
+      updateTimerUI();
+      checkState();
+    }
+  },1000);
+}
+function continueRegularLevel(){
+  moves=Math.max(moves,AD_CONFIG.rewardMoves);
+  if(levelTimeLeft<=0){
+    levelTimeLeft=15;
+    levelTimer=setInterval(()=>{
+      if(animating)return;
+      levelTimeLeft--;
+      updateTimerUI();
+      if(levelTimeLeft<=0){
+        clearLevelTimer();
+        levelTimeLeft=0;
+        updateTimerUI();
+        checkState();
+      }
+    },1000);
+  }
+  updateHUD();
+  draw();
+}
+function returnToHome(){
+  clearLevelTimer();
+  AdManager.hideBanner();
+  document.getElementById('ui').style.display='none';
+  document.getElementById('start-screen').classList.remove('hidden');
+  updateStartScreen();
+}
+function confirmExitLevel(){
+  if(document.getElementById('ui').style.display==='none')return;
+  showOverlay('退出当前关卡？','退出后本关进度不会保留。',[
+    {text:'继续游戏',cls:'btn-secondary',fn:hideOverlay},
+    {text:'退出关卡',cls:'btn-primary',fn:()=>{hideOverlay();returnToHome();}}
+  ]);
+}
 
 // ===== HUD =====
 function updateHUD(){
   document.getElementById('score').textContent=score;
   document.getElementById('moves').textContent=getMovesLeft();
   document.getElementById('level').textContent=gameMode===1?'∞':level;
-  document.getElementById('target').textContent=currentObj?(gameMode===1?'-':currentObj.target):'-'}
+  document.getElementById('target').textContent=currentObj?(gameMode===1?'-':currentObj.target):'-';
+  updateTimerUI()}
 
 // ===== 提示 =====
 function resetHintTimer(){clearTimeout(hintTimer);hintCells=null;hintTimer=setTimeout(showHint,4000)}
@@ -868,20 +992,23 @@ function drawComboTexts(){if(!comboTexts.length)return;const now=performance.now
 function checkState(){
   if(gameMode===1){// 无尽模式
     if(endlessMovesLeft<=0){
+      clearLevelTimer();
       playSound('lose');
       if(score>saveData.endlessBest)saveData.endlessBest=score;
       saveData.totalScore+=score;saveData.gamesPlayed++;saveGame(saveData);
       const newAch=checkAchievements();
       let achMsg='';if(newAch.length>0)achMsg='<br><span style="font-size:12px;color:#ffd700">🏆 新成就: '+newAch.map(a=>a.name).join(', ')+'</span>';
       showOverlay('♾️ 无尽结束',`最终得分: ${score}${achMsg}`,[
+        AdManager.canShowRewarded()?{text:`🎬 看广告 +${AD_CONFIG.rewardMoves}步`,cls:'btn-primary',fn:()=>{hideOverlay();AdManager.showRewarded(()=>{endlessMovesLeft=AD_CONFIG.rewardMoves;moves=AD_CONFIG.rewardMoves;updateHUD();draw()})}}:null,
         {text:'再来一局',cls:'btn-primary',fn:()=>startEndlessLevel()},
-        {text:'返回主页',cls:'btn-secondary',fn:()=>{document.getElementById('ui').style.display='none';document.getElementById('start-screen').classList.remove('hidden');updateStartScreen()}}
-      ]);return}
+        {text:'返回主页',cls:'btn-secondary',fn:returnToHome}
+      ].filter(Boolean));return}
     // 更新无尽模式分数显示
     document.getElementById('obj-progress').textContent=`分数: ${score}`;
     if(!hasValid()){shuffleBoard()}return;
   }
   if(isObjComplete()){playSound('win');
+    clearLevelTimer();
     if(level>saveData.maxLevel)saveData.maxLevel=level;
     saveData.totalScore+=score;saveData.gamesPlayed++;saveGame(saveData);
     const newAch=checkAchievements();
@@ -890,9 +1017,10 @@ function checkState(){
     if(newAch.length>0)achMsg='<br><br><span style="font-size:12px;color:#ffd700">🏆 新成就: '+newAch.map(a=>a.name).join(', ')+'</span>';
     // 关卡过渡动画
     showLevelTransition(level,stars,()=>{level++;startLevel(level)},achMsg);return}
-  if(moves<=0){playSound('lose');showOverlay('💀 游戏结束',`得分: ${score}<br>到达第 ${level} 关`,[
+  if(moves<=0||levelTimeLeft<=0){clearLevelTimer();playSound('lose');showOverlay(levelTimeLeft<=0?'⏰ 时间到':'💀 游戏结束',`得分: ${score}<br>到达第 ${level} 关`,[
+    AdManager.canShowRewarded()?{text:`🎬 看广告继续`,cls:'btn-primary',fn:()=>{hideOverlay();AdManager.showRewarded(()=>{continueRegularLevel()})}}:null,
     {text:'重新开始',cls:'btn-primary',fn:()=>{level=1;startLevel(1)}},
-    {text:'返回主页',cls:'btn-secondary',fn:()=>{document.getElementById('ui').style.display='none';document.getElementById('start-screen').classList.remove('hidden');updateStartScreen()}}]);return}
+    {text:'返回主页',cls:'btn-secondary',fn:returnToHome}].filter(Boolean));return}
   if(!hasValid()){shuffleBoard()}}
 
 // ===== 关卡过渡动画 =====
@@ -900,7 +1028,7 @@ function showLevelTransition(lv,stars,onNext,extraMsg){
   const area=getArea(lv+1);
   const sc=area?area.starColor:'#ffd700';
   showOverlay(`🎉 第${lv}关通过！`,`得分: ${score}<br><span class="star-char" style="color:${sc}">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</span><br><br><span style="font-size:12px;color:#666">下一关: ${area?area.name:'未知区域'}</span>${extraMsg||''}`,[
-    {text:'下一关 →',cls:'btn-primary',fn:()=>{hideOverlay();onNext()}}
+    {text:'下一关 →',cls:'btn-primary',fn:()=>{hideOverlay();if(AdManager.shouldShowInterstitial()){AdManager.showInterstitial(()=>onNext())}else{onNext()}}}
   ]);
 }
 
@@ -938,7 +1066,8 @@ function hideOverlay(){document.getElementById('overlay').classList.add('hidden'
 
 // ===== 启动 =====
 updateStartScreen();
-window.addEventListener('resize',()=>{if(!canvas)return;const maxW=Math.min(window.innerWidth-20,480);cellSize=Math.floor(maxW/COLS);canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;
+AdManager.init();AdManager.hideBanner();
+window.addEventListener('resize',()=>{if(!canvas)return;const maxW=Math.min(window.innerWidth-20,480);const maxH=Math.floor((window.innerHeight-160)/ROWS);cellSize=Math.min(Math.floor(maxW/COLS),maxH);canvas.width=cellSize*COLS;canvas.height=cellSize*ROWS;
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r]&&board[r][c]){board[r][c].x=c;board[r][c].y=r}initBgStars();draw()});
 </script>
 </body>
